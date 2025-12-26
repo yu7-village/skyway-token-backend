@@ -1,0 +1,21 @@
+{
+  "name": "skyway-token-server",
+  "version": "1.0.0",
+  "description": "SkyWay Token Generation API Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "skyway",
+    "token",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "5.2.1",
+    "@skyway-sdk/token": "2.0.2"
+  }
+}
