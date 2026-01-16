@@ -1,10 +1,8 @@
-// server.js (SkyWay公式SDK使用 + エラー回避の動的インポート)
+
+// server.js (最終最終版: jsonwebtokenを使用してトークンを直接生成)
 
 const express = require('express');
-
-// SkyWayToken のインポートを動的に行うため、ここでは定義しません。
-let SkyWayToken; 
-let SkyWayTokenPromise = null;
+const jwt = require('jsonwebtoken'); // ★JWTライブラリをインポート★
 
 // 環境変数 (Renderで設定)
 const SKYWAY_APP_ID = process.env.SKYWAY_APP_ID;
@@ -18,53 +16,55 @@ if (!SKYWAY_APP_ID || !SKYWAY_SECRET_KEY) {
 
 const app = express();
 
-// 1. SkyWayToken クラスの準備 (サーバー起動時に一度だけ実行)
-SkyWayTokenPromise = import('@skyway-sdk/token') // 非同期でクラスを強制取得
-    .then(module => {
-        // 公式SDKの認証サンプルに従い、SkyWayTokenクラスを取得
-        return module.SkyWayToken || module.default; 
-    })
-    .catch(error => {
-        console.error("Critical Error: Failed to import SkyWayToken module.", error);
-        process.exit(1);
-    });
+// サーバー起動確認用のルート
+app.get('/', (req, res) => {
+    res.send('SkyWay Token Server is running. Access /api/skyway-token to get a token.');
+});
 
-// 2. SkyWayの認証トークンを提供するエンドポイント
-app.get('/api/skyway-token', async (req, res) => {
+// 1. SkyWayの認証トークンを提供するエンドポイント
+app.get('/api/skyway-token', (req, res) => { // ★非同期処理は不要になりました★
     res.setHeader('Access-Control-Allow-Origin', '*'); 
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
 
-    const peerId = 'p2p-peer-' + Date.now(); 
-    const roomId = req.query.roomId || 'default-room'; // ルームIDをクエリから受け取る想定
-
+    const peerId = 'p2p-peer-' + Date.now();
+    const roomId = req.query.roomId || 'default-room'; 
+    const now = Math.floor(Date.now() / 1000); // 現在時刻 (Unixタイムスタンプ)
+    
     try {
-        // トークンクラスが準備できるのを待つ
-        SkyWayToken = await SkyWayTokenPromise; 
-        
-        if (!SkyWayToken || typeof SkyWayToken !== 'function') {
-             // 過去のエラーが再発した場合
-             throw new Error("SkyWayToken is not a valid constructor even after dynamic import.");
-        }
-
-        // 3. SkyWay公式認証サンプルのロジックを適用
-        const token = new SkyWayToken({
-            app: {
-                id: SKYWAY_APP_ID,
-                // Secret Key はコンストラクタに渡す
-                secret: SKYWAY_SECRET_KEY, 
+        // 2. JWTのペイロード（トークンの中身）を定義
+        const payload = {
+            jti: SKYWAY_APP_ID + ':' + now,
+            iat: now,                      
+            exp: now + 3600,                
+            scope: {
+                app: {
+                    id: SKYWAY_APP_ID,
+                    turn: true,
+                    actions: [
+                        { name: 'join_room', body: { name: roomId, type: 'p2p' } }
+                    ]
+                },
+                room: {
+                    actions: [{ name: 'write' }],
+                    resource: { name: roomId, type: 'p2p' }
+                }
             },
             peer: {
-                id: peerId,
-                scope: [{
-                    service: 'room',
-                    actions: ['write'], // ルームでの書き込み権限
-                    resource: { room: `room-name:${roomId}`, name: peerId, type: 'p2p' } 
-                }],
-            },
-            ttl: 3600 // 有効期限 1時間
-        }).encode(); // トークンをエンコード
+                id: peerId
+            }
+        };
 
-        console.log(`[LOG] SkyWay SDK token generated successfully.`);
+        // 3. 秘密鍵を使用してトークンに署名し、エンコードする
+        const token = jwt.sign(payload, SKYWAY_SECRET_KEY, {
+            algorithm: 'HS256',
+            header: {
+                typ: 'JWT',
+                alg: 'HS256',
+                kid: SKYWAY_APP_ID // Key ID
+            }
+        });
+
+        console.log(`[LOG] JWT token generated successfully using jsonwebtoken.`);
 
         res.json({
             appId: SKYWAY_APP_ID,
@@ -73,8 +73,8 @@ app.get('/api/skyway-token', async (req, res) => {
         });
         
     } catch (error) {
-        console.error(`[CRITICAL ERROR] Token generation failed: ${error.message}`);
-        res.status(500).send('Internal Server Error: Failed to generate token using SkyWay SDK.');
+        console.error(`[CRITICAL ERROR] JWT generation failed: ${error.message}`);
+        res.status(500).send('Internal Server Error: Failed to generate JWT token.');
     }
 });
 
