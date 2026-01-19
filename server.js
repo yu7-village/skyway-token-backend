@@ -15,10 +15,15 @@ if (!SKYWAY_APP_ID || !SKYWAY_SECRET_KEY) {
 
 const app = express();
 
-// サーバー起動確認用のルート
+
+// サーバー起動確認用のルート (CORS対応を追加)
 app.get('/', (req, res) => {
+    // すべてのオリジンからのアクセスを許可するヘッダーを追加
+    res.setHeader('Access-Control-Allow-Origin', '*'); 
     res.send('SkyWay Auth Token Server (V3) is running.');
 });
+
+
 
 // トークン生成エンドポイント
 app.get('/api/skyway-token', (req, res) => {
