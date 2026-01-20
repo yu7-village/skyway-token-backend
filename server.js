@@ -39,26 +39,36 @@ app.get('/api/skyway-token', (req, res) => {
          * SkyWay Auth Token Version 3 ペイロード構成
          * SDK v2.x 以降で必須の形式です
          */
-        const payload = {
-            jti: crypto.randomUUID(), // トークンのユニークID
-            iat: now,                 // 発行時刻
-            exp: now + 3600,          // 有効期限 (1時間)
-            version: 3,               // ★重要: V3を指定
-            scope: {                  //
-                appId: SKYWAY_APP_ID, 
-                turn: true,
-                rooms: [
-                    {
-                        name: roomId, // 特定のルーム、または "*" で全ルームを許可
-                        methods: ['create', 'close', 'updateMetadata'], // ルーム操作権限
-                        member: {
-                            name: '*', // すべてのメンバー名を許可
-                            methods: ['publish', 'subscribe', 'updateMetadata'] // メンバー操作権限
-                        }
+
+
+
+// --- server.js のトークン生成部分のみ抜粋 ---
+const payload = {
+    jti: crypto.randomUUID(),
+    iat: now,
+    exp: now + 3600,
+    version: 3,
+    scope: {
+        app: { // ★重要: app オブジェクトにする
+            id: SKYWAY_APP_ID,
+            turn: true, // TURNサーバー（リレー）を許可
+            actions: ['read'], // 基本的な読み取り権限
+            rooms: [
+                {
+                    name: roomId,
+                    methods: ['create', 'updateMetadata'],
+                    member: {
+                        name: '*',
+                        methods: ['publish', 'subscribe', 'updateMetadata']
                     }
-                ]
-            }
-        };
+                }
+            ]
+        }
+    }
+};
+
+
+
 
         // トークンの署名と生成
         const token = jwt.sign(payload, SKYWAY_SECRET_KEY, {
