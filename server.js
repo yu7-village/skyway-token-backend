@@ -1,3 +1,4 @@
+// server.js の中身を以下で「すべて」上書きしてください
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -25,20 +26,21 @@ app.get('/api/skyway-token', (req, res) => {
     const now = Math.floor(Date.now() / 1000); 
     
     try {
+        // ★ここが「failed to decode」を回避するための最重要ポイントです
         const payload = {
             jti: crypto.randomUUID(),
             iat: now,
             exp: now + 3600,
             version: 3,
             scope: {
-                app: { // 🚨 ここが重要：appグループの中にidを入れる
+                app: { // appId ではなく「app」というグループを作る
                     id: SKYWAY_APP_ID,
-                    turn: true,
+                    turn: true, // これを有効にするために構造変更が必要
                     actions: ['read'],
                     rooms: [
                         {
                             name: roomId,
-                            actions: ['write'],
+                            actions: ['write'], // methods ではなく actions
                             members: [
                                 {
                                     name: '*',
