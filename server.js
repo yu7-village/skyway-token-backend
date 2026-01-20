@@ -46,6 +46,7 @@ app.get('/api/skyway-token', (req, res) => {
             version: 3,               // ★重要: V3を指定
             scope: {                  //
                 appId: SKYWAY_APP_ID, 
+                turn: true,
                 rooms: [
                     {
                         name: roomId, // 特定のルーム、または "*" で全ルームを許可
