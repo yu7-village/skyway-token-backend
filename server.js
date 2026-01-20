@@ -25,33 +25,34 @@ app.get('/api/skyway-token', (req, res) => {
     const now = Math.floor(Date.now() / 1000); 
     
     try {
-        const payload = {
-            jti: crypto.randomUUID(),
-            iat: now,
-            exp: now + 3600,
-            version: 3,
-            scope: {
-                app: { // 構造をV3仕様に修正
-                    id: SKYWAY_APP_ID,
-                    turn: true,
-                    actions: ['read'],
-                    rooms: [
-                        {
-                            name: roomId,
-                            actions: ['write'], // methodsからactionsに変更
-                            members: [
-                                {
-                                    name: '*',
-                                    actions: ['write'],
-                                    publication: { actions: ['write'] },
-                                    subscription: { actions: ['write'] }
-                                }
-                            ]
-                        }
-                    ]
+        
+
+
+
+
+const payload = {
+    jti: crypto.randomUUID(),
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    version: 3, // V3を明示
+    scope: {
+        appId: SKYWAY_APP_ID, 
+        rooms: [
+            {
+                name: roomId,
+                methods: ["create", "updateMetadata", "close"], 
+                member: { 
+                    name: "*",
+                    methods: ["publish", "subscribe", "updateMetadata"]
                 }
             }
-        };
+        ],
+        turn: { enabled: true } 
+    }
+};
+
+            
+
 
         const token = jwt.sign(payload, SKYWAY_SECRET_KEY, {
             algorithm: 'HS256',
