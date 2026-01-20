@@ -25,21 +25,21 @@ app.get('/api/skyway-token', (req, res) => {
     const now = Math.floor(Date.now() / 1000); 
     
     try {
-        // ★修正: SkyWay Auth Token V3 の正しい構造
+        // ★ここを修正しました：V3の正しい構造
         const payload = {
             jti: crypto.randomUUID(),
             iat: now,
             exp: now + 3600,
             version: 3,
             scope: {
-                app: { // appId ではなく app オブジェクトにする
+                app: { // appId ではなく app グループにする
                     id: SKYWAY_APP_ID,
-                    turn: true, // TURN サーバーを有効化
+                    turn: true, // これで拠点間接続が安定します
                     actions: ['read'],
                     rooms: [
                         {
                             name: roomId,
-                            actions: ['write'],
+                            actions: ['write'], // methods ではなく actions
                             members: [
                                 {
                                     name: '*',
