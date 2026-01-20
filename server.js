@@ -25,21 +25,20 @@ app.get('/api/skyway-token', (req, res) => {
     const now = Math.floor(Date.now() / 1000); 
     
     try {
-        // ★ここを修正しました：V3の正しい構造
         const payload = {
             jti: crypto.randomUUID(),
             iat: now,
             exp: now + 3600,
             version: 3,
             scope: {
-                app: { // appId ではなく app グループにする
+                app: { // 🚨 ここが重要：appグループの中にidを入れる
                     id: SKYWAY_APP_ID,
-                    turn: true, // これで拠点間接続が安定します
+                    turn: true,
                     actions: ['read'],
                     rooms: [
                         {
                             name: roomId,
-                            actions: ['write'], // methods ではなく actions
+                            actions: ['write'],
                             members: [
                                 {
                                     name: '*',
@@ -64,9 +63,8 @@ app.get('/api/skyway-token', (req, res) => {
         });
 
         res.json({ token: token });
-        
     } catch (error) {
-        res.status(500).send('Internal Server Error');
+        res.status(500).json({ error: error.message });
     }
 });
 
