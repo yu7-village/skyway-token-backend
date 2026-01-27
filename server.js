@@ -29,12 +29,14 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/skyway-token', (req, res) => {
-    const roomId = req.query.roomId || '*'; // デフォルトを全ルーム許可にするか特定の名前にするか
+    const roomId = req.query.roomId || '*'; // デフォルトを全ルーム許可にする
     
     // 時刻の計算 (秒単位)
     const now = Math.floor(Date.now() / 1000);
     const iat = now - 30; // サーバー時刻のズレを考慮して30秒前に設定
-    const exp = now + 500; // 1時間有効 3600
+    
+    // 【修正箇所】 有効期限を 500秒から 3600秒(1時間) に延長
+    const exp = now + 3600; 
 
     try {
         const payload = {
@@ -44,11 +46,12 @@ app.get('/api/skyway-token', (req, res) => {
             version: 3,
             scope: {
                 appId: SKYWAY_APP_ID,
+                // 【修正箇所】 通信維持時間を明示的に設定（1時間）
+                sessionDuration: 3600, 
                 rooms: [
                     {
-                        name: roomId, // 特定のルーム名、または "*"
+                        name: roomId, 
                         methods: ["create", "updateMetadata", "close"],
-                        // SFU利用を想定して追加
                         sfu: { enabled: true },
                         member: {
                             name: "*",
@@ -56,7 +59,6 @@ app.get('/api/skyway-token', (req, res) => {
                         }
                     }
                 ],
-                // TURNサーバー（通信経路確保）を有効化
                 turn: { enabled: true }
             }
         };
