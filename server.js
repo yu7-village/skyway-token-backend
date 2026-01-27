@@ -34,7 +34,7 @@ app.get('/api/skyway-token', (req, res) => {
     // 時刻の計算 (秒単位)
     const now = Math.floor(Date.now() / 1000);
     const iat = now - 30; // サーバー時刻のズレを考慮して30秒前に設定
-    const exp = now + 3600; // 1時間有効
+    const exp = now + 500; // 1時間有効 3600
 
     try {
         const payload = {
